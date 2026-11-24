@@ -1,0 +1,31 @@
+{
+  "name": "debabble",
+  "version": "0.1.0",
+  "description": "Run a command with its output in a log file; print one line when it passes and an excerpt when it fails.",
+  "type": "module",
+  "bin": {
+    "debabble": "bin/debabble.mjs"
+  },
+  "engines": {
+    "node": ">=22"
+  },
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/bretperry/debabble.git"
+  },
+  "homepage": "https://github.com/bretperry/debabble#readme",
+  "bugs": {
+    "url": "https://github.com/bretperry/debabble/issues"
+  },
+  "exports": "./src/index.mjs",
+  "files": [
+    "src/",
+    "bin/"
+  ],
+  "scripts": {
+    "test": "node --test",
+    "bench": "node scripts/bench.mjs",
+    "bench:hook": "node scripts/bench-hook.mjs"
+  }
+}

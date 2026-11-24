@@ -1,0 +1,8 @@
+{
+  "requires": {},
+  "wrap": [
+    { "match": "git fetch", "show": "verdict" },
+    { "match": "node --test", "show": "verdict" },
+    { "match": "ssh", "show": "excerpt" }
+  ]
+}

@@ -1,0 +1,12 @@
+{
+  "binary": [],
+  "allow": [
+    { "text": "/home", "in": "src/hook.mjs" },
+    { "text": "/home", "in": "test/hook.test.mjs" },
+    { "text": "/Users", "in": "test/hook.test.mjs" },
+    { "text": "/home", "in": ".release/config.json" },
+    { "text": "/Users", "in": ".release/config.json" },
+    { "text": "/users", "in": ".release/config.json" },
+    { "text": "self-hosted" }
+  ]
+}
