@@ -12,7 +12,7 @@ import { ancestorBlindSpot, blindSpot, claudeHost, compareVersions, decide, flag
 import { BIN, tmp } from "./helpers.mjs";
 
 const LIST = {
-  requires: { bouncer: "0.2.0", debabble: "0.1.0" },
+  requires: { debabble: "0.1.0" },
   wrap: [
     { match: "pnpm test", show: "verdict" },
     { match: "node --test", show: "verdict" },
@@ -25,7 +25,7 @@ const LIST = {
 const OK = {
   background: false,
   blind: null,
-  versions: { bouncer: "0.2.0", debabble: "0.1.0" },
+  versions: { debabble: "0.1.0" },
   rules: { allow: ["debabble -- pnpm test:*", "debabble -- node --test *", "debabble -- git fetch:*", "debabble --show excerpt -- gh run view *", "debabble --show excerpt -- ssh *"], deny: [], ask: [] },
 };
 const ENV = {};
@@ -144,14 +144,13 @@ describe("gates", () => {
   it("exact mirror", () => assert.equal(without({ rules: { allow: ["debabble -- pnpm test"], deny: [], ask: [] } }), wrapped(line)));
   it("a deny rule on the rewritten line: no rewrite", () => assert.equal(without({ rules: { ...OK.rules, deny: ["debabble -- pnpm test"] } }), null));
   it("an ask rule on the rewritten line: no rewrite", () => assert.equal(without({ rules: { ...OK.rules, ask: ["debabble:*"] } }), null));
-  it("bouncer missing: no rewrite", () => assert.equal(without({ versions: { debabble: "0.1.0" } }), null));
-  it("debabble missing: no rewrite", () => assert.equal(without({ versions: { bouncer: "0.2.0" } }), null));
-  it("bouncer older than its pin: no rewrite", () => assert.equal(without({ versions: { bouncer: "0.1.9", debabble: "0.1.0" } }), null));
-  it("debabble older than its pin: no rewrite", () => assert.equal(without({ versions: { bouncer: "0.2.0", debabble: "0.1.0-pre.1" } }), null));
-  it("past both pins: rewrite", () => assert.equal(without({ versions: { bouncer: "1.0.0", debabble: "0.1.1" } }), wrapped(line)));
-  it("a pin missing from the list: no rewrite", () => assert.equal(decide(line, { ...LIST, requires: { debabble: "0.1.0" } }, ENV, OK), null));
+  it("debabble missing: no rewrite", () => assert.equal(without({ versions: {} }), null));
+  it("debabble older than its pin: no rewrite", () => assert.equal(without({ versions: { debabble: "0.1.0-pre.1" } }), null));
+  it("past its pin: rewrite", () => assert.equal(without({ versions: { debabble: "0.1.1" } }), wrapped(line)));
+  it("the pin missing from the list: no rewrite", () => assert.equal(decide(line, { ...LIST, requires: {} }, ENV, OK), null));
+  it("a pin for any other program is ignored", () => assert.equal(decide(line, { ...LIST, requires: { debabble: "0.1.0", other: "9.9.9" } }, ENV, OK), wrapped(line)));
   it("no requires at all (the default list): no rewrite", () => assert.equal(decide(line, { wrap: LIST.wrap }, ENV, OK), null));
-  it("a version that is not one: no rewrite", () => assert.equal(without({ versions: { bouncer: "latest", debabble: "0.1.0" } }), null));
+  it("a version that is not one: no rewrite", () => assert.equal(without({ versions: { debabble: "latest" } }), null));
   it("a rule source the hook cannot read (or no word on it): no rewrite", () => {
     assert.equal(without({ blind: "MDM profile" }), null);
     assert.equal(without({ blind: undefined }), null);
@@ -159,17 +158,17 @@ describe("gates", () => {
   it("the shipped default list rewrites nothing, even with every other gate met (its `requires` is empty on purpose)", () => {
     const list = JSON.parse(readFileSync(new URL("../src/default-wrap.json", import.meta.url), "utf8"));
     assert.deepEqual(list.requires, {});
-    const facts = { ...OK, versions: { bouncer: "99.0.0", debabble: "99.0.0" }, rules: { allow: ["debabble:*"], deny: [], ask: [] } };
+    const facts = { ...OK, versions: { debabble: "99.0.0" }, rules: { allow: ["debabble:*"], deny: [], ask: [] } };
     for (const { match } of list.wrap) {
-      assert.equal(decide(`${match} x`, { ...list, requires: { bouncer: "0.0.1", debabble: "0.0.1" } }, ENV, facts), wrapped(`${match} x`, match === "ssh" ? "excerpt" : "verdict"), match);
+      assert.equal(decide(`${match} x`, { ...list, requires: { debabble: "0.0.1" } }, ENV, facts), wrapped(`${match} x`, match === "ssh" ? "excerpt" : "verdict"), match);
       assert.equal(decide(`${match} x`, list, ENV, facts), null, match);
     }
   });
 });
 
-// A machine: bouncer and debabble bins on a PATH folder with their package.json beside them, a HOME with user settings, a project with its own settings.
+// A machine: a debabble bin on a PATH folder with its package.json beside it, a HOME with user settings, a project with its own settings.
 // shim: { bin: "0.2.0" } makes that bin a script that prints the version with no package.json (as a pnpm, Volta or asdf shim); "hang" makes it never answer.
-const machine = ({ bouncer = "0.2.0", debabble = "0.1.0", allow = OK.rules.allow, projectAllow = [], deny = [], shim = {} } = {}) => {
+const machine = ({ debabble = "0.1.0", allow = OK.rules.allow, projectAllow = [], deny = [], shim = {} } = {}) => {
   const root = tmp("hook");
   const bin = join(root, "bin");
   mkdirSync(bin);
@@ -177,7 +176,7 @@ const machine = ({ bouncer = "0.2.0", debabble = "0.1.0", allow = OK.rules.allow
     writeFileSync(join(bin, name), version === "hang" ? "#!/bin/sh\nsleep 5\n" : `#!/bin/sh\necho ${version}\n`);
     chmodSync(join(bin, name), 0o755);
   }
-  for (const [name, pkg, version] of [["bouncer", "shell-bouncer", bouncer], ["debabble", "debabble", debabble]]) {
+  for (const [name, pkg, version] of [["debabble", "debabble", debabble]]) {
     if (version === null || shim[name] !== undefined) continue;
     const dir = join(root, "lib", pkg);
     mkdirSync(join(dir, "bin"), { recursive: true });
@@ -586,12 +585,12 @@ describe("end to end (bin, fake PATH, settings files)", () => {
     assert.equal(viaParent(["--disallowedTools=Bash(git fetch:*)"]).stdout, "");
     assert.equal(JSON.parse(viaParent(["--model", "x"]).stdout).hookSpecificOutput.updatedInput.command, "debabble -- git fetch origin");
   });
-  it("bouncer behind a shim (no package.json): its --version answers, rewrite", { skip: hostBlind }, () => {
-    const out = hook(machine({ shim: { bouncer: "v0.2.1" } }), stdin("pnpm test"));
+  it("debabble behind a shim (no package.json): its --version answers, rewrite", { skip: hostBlind }, () => {
+    const out = hook(machine({ shim: { debabble: "v0.1.1" } }), stdin("pnpm test"));
     assert.equal(JSON.parse(out.stdout).hookSpecificOutput.updatedInput.command, "debabble -- pnpm test");
   });
-  it("a shim older than its pin: no output", () => assert.equal(hook(machine({ shim: { bouncer: "0.1.0" } }), stdin("pnpm test")).stdout, ""));
-  it("a shim that prints no version: no output", () => assert.equal(hook(machine({ shim: { bouncer: "oops" } }), stdin("pnpm test")).stdout, ""));
+  it("a shim older than its pin: no output", () => assert.equal(hook(machine({ shim: { debabble: "0.0.9" } }), stdin("pnpm test")).stdout, ""));
+  it("a shim that prints no version: no output", () => assert.equal(hook(machine({ shim: { debabble: "oops" } }), stdin("pnpm test")).stdout, ""));
   it("a shim that hangs: no output, within the version timeout", () => {
     const started = Date.now();
     const out = hook(machine({ shim: { debabble: "hang" } }), stdin("pnpm test"));
@@ -618,9 +617,8 @@ describe("end to end (bin, fake PATH, settings files)", () => {
     assert.equal(out.stdout + out.stderr, "");
   });
   it("run_in_background: no output", () => assert.equal(hook(machine(), stdin("pnpm test", { run_in_background: true })).stdout, ""));
-  it("bouncer not on PATH: no output", () => assert.equal(hook(machine({ bouncer: null }), stdin("pnpm test")).stdout, ""));
   it("debabble not on PATH: no output", () => assert.equal(hook(machine({ debabble: null }), stdin("pnpm test")).stdout, ""));
-  it("bouncer older than its pin: no output", () => assert.equal(hook(machine({ bouncer: "0.1.1" }), stdin("pnpm test")).stdout, ""));
+  it("debabble older than its pin: no output", () => assert.equal(hook(machine({ debabble: "0.0.9" }), stdin("pnpm test")).stdout, ""));
   it("no mirror anywhere: no output", () => assert.equal(hook(machine({ allow: [] }), stdin("pnpm test")).stdout, ""));
   it("a user deny on the rewritten line: no output", () => assert.equal(hook(machine({ deny: ["debabble:*"] }), stdin("pnpm test")).stdout, ""));
   it("DEBABBLE=off in the hook's env: no output", () => {
@@ -675,7 +673,7 @@ describe("the layered wrap list (no --list)", () => {
     const xdg = writeUser([]);
     const raw = JSON.stringify({ requires: {}, wrap: [{ match: "pnpm check", show: "verdict" }] });
     const xdg2 = writeUser(null, raw);
-    const old = machine({ bouncer: "0.1.0", allow: OK.rules.allow });
+    const old = machine({ debabble: "0.0.9", allow: OK.rules.allow });
     assert.equal(run(old, xdg, "pnpm test"), "");
     assert.equal(run(old, xdg2, "pnpm test"), "");
   });
