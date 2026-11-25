@@ -17,7 +17,7 @@
 //   `✓ <label> · 41.2s · log: <path>` (with `· 1 warning: "…"` and `· 1 error-like line: "…"` before the path when the log holds any), or for a red run
 //   `✗ <label> · exit 1 · 38.9s`, the excerpt indented two spaces, and a last line `log: <path>`. A timeout or kill is one line ending ` · log: <path>`.
 //   `--show excerpt` is for log readers (`gh run view --log`): green prints `✓ … · N failure lines of M` and those lines, red as above.
-// `--` is required so a guard that reads the line can find the command without knowing debabble's flags.
+// `--` is required so a tool that reads the line can find the command without knowing debabble's flags.
 
 import { writeSync } from "node:fs";
 import { constants } from "node:os";

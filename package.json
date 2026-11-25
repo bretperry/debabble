@@ -1,6 +1,6 @@
 {
   "name": "debabble",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "Run a command with its output in a log file; print one line when it passes and an excerpt when it fails.",
   "type": "module",
   "bin": {

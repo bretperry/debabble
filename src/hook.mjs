@@ -3,7 +3,7 @@
 // Run: Claude Code pipes the hook JSON on stdin; settings entry: `{"type":"command","command":"debabble hook claude","timeout":5}` under PreToolUse, matcher `Bash`.
 // When: every Bash call in a project that wires it.
 // Env: DEBABBLE=off (no rewrite); CLAUDE_PROJECT_DIR (where project settings are read; else the hook JSON's `cwd`); HOME; CLAUDE_CONFIG_DIR (the user
-//   settings folder, else ~/.claude); PATH (where `bouncer` and `debabble` are looked up); any RULE_ENV variable set (no rewrite).
+//   settings folder, else ~/.claude); PATH (where `debabble` is looked up); any RULE_ENV variable set (no rewrite).
 // Writes: nothing but stdout: either nothing (no rewrite) or one JSON line with `updatedInput`. Never a `permissionDecision`.
 // Exit: 0 always (a usage error prints one line on stderr). Any other error prints nothing, so Claude Code runs the original command (costs tokens, never safety).
 // Used by: bin/debabble.mjs; tested by test/hook.test.mjs.
@@ -18,11 +18,11 @@
 //   and it starts with a program, not a shell builtin or keyword (`cd`, `time`, `export`, `source`, `exec`, …);
 // - its words start with a list entry's `match` words, and it is not already a debabble line;
 // - DEBABBLE is not `off`; the call is not `run_in_background`;
-// - `bouncer` and `debabble` are on PATH (version from their package.json, else `--version`), each at or past its pin in the list's `requires` (a missing pin counts as not met);
+// - `debabble` is on PATH (version from its package.json, else `--version`), at or past its pin in the list's `requires` (a missing pin counts as not met);
 // - an allow rule in the user or project settings matches the rewritten line (the mirror), and no deny or ask rule matches either line;
 // - every place Claude Code may take a deny or ask rule from is one the hook reads (blindSpot, ancestorBlindSpot): Claude Code checks its rules against the rewritten
 //   line only, so a deny the hook cannot see (`Bash(git push:*)` in an MDM profile or `--settings`) would not match `debabble -- git push …`.
-// The rewrite is the prefix plus the exact original bytes, so the line the guard judged is the line that runs inside the wrapper.
+// The rewrite is the prefix plus the exact original bytes, so the line any other PreToolUse hook judged is the line that runs inside the wrapper.
 
 import { execFileSync } from "node:child_process";
 import { readFileSync, readdirSync, realpathSync, statSync } from "node:fs";
@@ -32,8 +32,8 @@ import { NOT_PROGRAMS, readLayered } from "./list.mjs";
 
 export { NOT_PROGRAMS };
 
-// The programs whose versions gate a rewrite, and the npm package each belongs to (to find its package.json from the bin on PATH).
-export const REQUIRED = { bouncer: "shell-bouncer", debabble: "debabble" };
+// The program whose version gates a rewrite, and its npm package (to find its package.json from the bin on PATH).
+export const REQUIRED = { debabble: "debabble" };
 const PACKAGE_DEPTH = 6;
 // The fallback `<bin> --version` (only when no package.json is found, as behind a pnpm, Volta or asdf shim) gives up after this long: no version, no rewrite.
 const VERSION_TIMEOUT_MS = 1000;
@@ -197,7 +197,7 @@ export const compareVersions = (a, b) => {
 const isDebabble = (word) => word === "debabble" || word.endsWith("/debabble");
 
 // The pure core: the rewritten command, or null for no rewrite.
-// facts: { background, versions: { bouncer, debabble }, rules: { allow, deny, ask } (rule contents of `Bash(…)` entries), blind (a reason, or null) }.
+// facts: { background, versions: { debabble }, rules: { allow, deny, ask } (rule contents of `Bash(…)` entries), blind (a reason, or null) }.
 export const decide = (line, list, env, facts) => {
   if (env.DEBABBLE === "off" || facts.background !== false || facts.blind !== null) return null;
   const words = readLine(line);

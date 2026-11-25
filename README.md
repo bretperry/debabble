@@ -63,9 +63,9 @@ It rewrites only when all of these hold; otherwise it prints nothing and the com
   It starts with a program, not a shell builtin or keyword (`cd`, `time`, `export`, `source`, `exec`, …).
 - Its first words match an entry in the list file, and it is not already a `debabble` line.
 - `DEBABBLE` is not `off`, and the call is not `run_in_background`.
-- `bouncer` (shell-bouncer) and `debabble` are on `PATH`, each at or past its version in `requires`
-  (read from the package's `package.json`, else from `<bin> --version` within 1 second).
-  A list without both pins never rewrites.
+- `debabble` is on `PATH`, at or past its version in `requires`
+  (read from its `package.json`, else from `debabble --version` within 1 second).
+  A list without that pin never rewrites.
 - An allow rule in your user settings (`~/.claude/settings.json`, or `$CLAUDE_CONFIG_DIR/settings.json`),
   the project's `.claude/settings.json` or a `.claude/settings.local.json` (in the project folder, the repo root,
   or a worktree's main checkout) matches the rewritten line (for example `Bash(debabble -- pnpm test:*)`),
@@ -95,7 +95,7 @@ It rewrites only when all of these hold; otherwise it prints nothing and the com
     On Linux, argv is read from `/proc/<pid>/cmdline`; a claude that rewrites its process title would hide `--settings` (untested on Linux).
 
 **The built-in default list is a no-op.** Its `requires` is empty, so `debabble hook claude` without
-`--list` never rewrites anything. Pass `--list <file>` with both pins to turn the hook on.
+`--list` never rewrites anything. Pass `--list <file>` with a `debabble` pin to turn the hook on.
 Without `--list` the hook reads the shipped default under your own list file (see [Manage the wrap list](#manage-the-wrap-list)).
 `--list <file>` reads that one file and skips the layering.
 
@@ -106,7 +106,7 @@ List file:
 
 ```json
 {
-  "requires": { "bouncer": "0.2.0", "debabble": "0.1.0" },
+  "requires": { "debabble": "0.1.0" },
   "wrap": [
     { "match": "pnpm test", "show": "verdict" },
     { "match": "gh run view", "show": "excerpt" }

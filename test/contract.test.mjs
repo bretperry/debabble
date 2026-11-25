@@ -1,5 +1,5 @@
-// Tests that debabble reads its argv and picks its log base exactly as test/fixtures/guard-contract.json says, the file a guard (shell-bouncer)
-// reads to judge a debabble line without running it. A change here that breaks the fixture breaks that guard's reading too: update both.
+// Tests that debabble reads its argv and picks its log base exactly as test/fixtures/guard-contract.json says: the public contract for any
+// tool that judges a debabble line without running it. A change that breaks the fixture is a breaking change for those readers.
 // In the app: nothing at runtime. Run: `node --test`.
 // Used by: `npm test`.
 // Uses: src/cli.mjs (parseArgs), src/logs.mjs (logBase), bin/debabble.mjs (runs-nothing and usage-error cases, end to end).
